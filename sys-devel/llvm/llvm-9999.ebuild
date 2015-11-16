@@ -178,10 +178,8 @@ src_prepare() {
 		# Automatically select active system GCC's libraries, bugs #406163 and #417913
 		epatch "${FILESDIR}"/clang-3.5-gentoo-runtime-gcc-detection-v3.patch
 
-		epatch "${FILESDIR}"/clang-3.6-gentoo-install.patch
-
 		sed -i -e "s^@EPREFIX@^${EPREFIX}^" \
-			tools/clang/tools/scan-build/scan-build || die
+			tools/clang/tools/scan-build/bin/scan-build || die
 
 		# Install clang runtime into /usr/lib/clang
 		# https://llvm.org/bugs/show_bug.cgi?id=23792
@@ -465,27 +463,47 @@ multilib_src_install_all() {
 		pushd tools/clang >/dev/null || die
 
 		if use static-analyzer ; then
-			pushd tools/scan-build >/dev/null || die
+			pushd tools/scan-build/bin >/dev/null || die
 
-			dobin ccc-analyzer scan-build
-			dosym ccc-analyzer /usr/bin/c++-analyzer
+			dobin scan-build
+
+			popd >/dev/null || die
+
+			pushd tools/scan-build/man >/dev/null || die
+
 			doman scan-build.1
+
+			popd >/dev/null || die
+
+			pushd tools/scan-build/share/scan-build >/dev/null || die
 
 			insinto /usr/share/llvm
 			doins scanview.css sorttable.js
+
+			popd >/dev/null || die
+
+			pushd tools/scan-build/libexec >/dev/null || die
+
+			dobin ccc-analyzer 
+			dosym ccc-analyzer /usr/bin/c++-analyzer
 
 			popd >/dev/null || die
 		fi
 
 		python_inst() {
 			if use static-analyzer ; then
-				pushd tools/scan-view >/dev/null || die
+				pushd tools/scan-view/bin >/dev/null || die
 
 				python_doscript scan-view
 
 				touch __init__.py || die
+
+				popd >/dev/null || die
+
+				pushd tools/scan-view/share >/dev/null || die
+
 				python_moduleinto clang
-				python_domodule *.py Resources
+				python_domodule *.py
 
 				popd >/dev/null || die
 			fi
